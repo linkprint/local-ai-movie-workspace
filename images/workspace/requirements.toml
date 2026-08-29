@@ -1,0 +1,29 @@
+allowed_login_methods = ["chatgpt"]
+allowed_approval_policies = ["never"]
+default_permissions = "movie_workspace"
+
+[features]
+hooks = true
+
+[hooks]
+managed_dir = "/etc/codex/hooks"
+
+[[hooks.Stop]]
+[[hooks.Stop.hooks]]
+type = "command"
+command = "/usr/bin/python3 /etc/codex/hooks/enforce_image_urls.py"
+timeout = 5
+statusMessage = "Ensuring image Web links"
+
+[allowed_permission_profiles]
+movie_workspace = true
+
+[permissions.movie_workspace]
+description = "Movie Portal workspace-only profile"
+extends = ":workspace"
+
+[permissions.movie_workspace.workspace_roots]
+"/outputs" = true
+
+[permissions.movie_workspace.network]
+enabled = true

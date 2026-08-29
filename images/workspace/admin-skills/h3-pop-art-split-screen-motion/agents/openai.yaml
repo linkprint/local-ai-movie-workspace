@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Pop Art Split-Screen Motion"
+  short_description: "Design rhythmic pop-art split-screen ads"
+  default_prompt: "Use $h3-pop-art-split-screen-motion to write an original MiniMax H3 pop-art split-screen prompt and render it when requested."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Anime Character Showcase PV"
+  short_description: "Build looping comic character showcase videos"
+  default_prompt: "Use $h3-anime-character-showcase-pv to turn my character sheet and environment into a locked MiniMax H3 anime showcase prompt and render it when supported."

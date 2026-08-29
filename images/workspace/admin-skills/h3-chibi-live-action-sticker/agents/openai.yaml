@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Chibi Live-Action Sticker"
+  short_description: "Mix flat chibi characters with live action"
+  default_prompt: "Use $h3-chibi-live-action-sticker to turn this idea into a MiniMax H3 mixed-media prompt and render it when requested."

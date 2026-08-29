@@ -1,0 +1,16 @@
+model_provider = "movie_router"
+model_catalog_json = "/home/codex/.codex/movie-models.json"
+
+[features]
+enable_request_compression = false
+
+[model_providers.movie_router]
+name = "Movie Router"
+base_url = "http://127.0.0.1:8765/v1"
+wire_api = "responses"
+requires_openai_auth = true
+supports_websockets = false
+supports_standalone_web_search = true
+request_max_retries = 2
+stream_max_retries = 2
+stream_idle_timeout_ms = 300000

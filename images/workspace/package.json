@@ -1,0 +1,8 @@
+{
+  "name": "movie-workspace-runtime",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@openai/codex": "0.149.1"
+  }
+}

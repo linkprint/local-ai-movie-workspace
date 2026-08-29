@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Japanese Craft Commercial"
+  short_description: "Create precise tactile craft product films"
+  default_prompt: "Use $h3-japanese-craft-commercial to turn this product into a refined MiniMax H3 craft-commercial prompt and render it when requested."

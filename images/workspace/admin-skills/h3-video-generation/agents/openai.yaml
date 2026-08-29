@@ -1,0 +1,4 @@
+interface:
+  display_name: "MiniMax H3 Video Generation"
+  short_description: "Render H3 video through the bounded Broker"
+  default_prompt: "Use $h3-video-generation to submit this approved MiniMax H3 video request and retrieve the artifact."

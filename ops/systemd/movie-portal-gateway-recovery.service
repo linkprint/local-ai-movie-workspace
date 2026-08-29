@@ -1,0 +1,17 @@
+[Unit]
+Description=Recover Movie AI Portal gateway after network initialization
+Wants=docker.service network-online.target
+After=docker.service network-online.target systemd-networkd.service
+ConditionPathExists=/srv/movie-portal/compose.yaml
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/srv/movie-portal/ops/systemd/movie-portal-gateway-recovery.sh
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=15
+TimeoutStartSec=240
+
+[Install]
+WantedBy=multi-user.target

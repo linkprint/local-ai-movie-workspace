@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Interactive Creature Encyclopedia"
+  short_description: "Animate collectible creature UI showcases"
+  default_prompt: "Use $h3-interactive-creature-encyclopedia to write an original MiniMax H3 creature-encyclopedia UI prompt and render it when requested."

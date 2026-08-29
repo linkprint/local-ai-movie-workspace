@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Asymmetric Speed Duo"
+  short_description: "Stage count-locked 3:1 duo movement"
+  default_prompt: "Use $h3-asymmetric-speed-duo-choreography to write an original MiniMax H3 duo prompt with a precise asymmetric action-count ratio, and render only when requested."

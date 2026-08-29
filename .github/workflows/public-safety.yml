@@ -1,0 +1,37 @@
+name: Public safety
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scan-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Scan tree and reachable history
+        run: python3 ops/tests/public_release_scan.py --tree --history
+      - name: Run control-plane unit tests
+        run: python3 -m unittest discover -s ops/tests -p 'test_*.py'
+      - name: Validate clean-install configuration and static gates
+        run: |
+          sh ops/bootstrap.sh
+          sh ops/bootstrap-worker.sh
+          docker compose config --quiet
+          docker compose --env-file env/worker.env -f compose.worker.yaml config --quiet
+          cp env/node_broker_hmac_secret.200 env/node_broker_hmac_secret.300
+          python3 ops/render-node-secret-override.py \
+            --node 30000000-0000-4000-8000-000000000300=node_broker_hmac_secret.300 \
+            > compose.node-secrets.yaml
+          docker compose -f compose.yaml -f compose.node-secrets.yaml config --quiet
+          sh ops/tests/gate4-static.sh

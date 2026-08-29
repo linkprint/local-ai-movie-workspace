@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Creature Motion Replacement"
+  short_description: "Replace performers with cinematic creatures"
+  default_prompt: "Use $h3-creature-motion-replacement to design a MiniMax H3 creature-replacement prompt and render it when the inputs are supported."

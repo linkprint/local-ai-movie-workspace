@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Micro FPV Impossible One-Take"
+  short_description: "Direct viral micro-FPV H3 flythroughs"
+  default_prompt: "Use $h3-micro-fpv-impossible-one-take to write an original MiniMax H3 micro-FPV one-take prompt and render it when requested."

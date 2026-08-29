@@ -1,0 +1,25 @@
+[Unit]
+Description=Movie AI %i Responses model tunnel
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=movie-model-tunnel
+Group=movie-qwen
+EnvironmentFile=/etc/movie-model-tunnel/%i.env
+ExecStart=/usr/bin/ssh -NT -i /etc/movie-model-tunnel/id_ed25519 -o BatchMode=yes -o ExitOnForwardFailure=yes -o IdentitiesOnly=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/movie-model-tunnel/known_hosts -R ${MOVIE_REMOTE_SOCKET}:${MOVIE_LOCAL_HOST}:${MOVIE_LOCAL_PORT} ${MOVIE_TUNNEL_USER}@${MOVIE_PORTAL_HOST}
+Restart=always
+RestartSec=3
+TimeoutStopSec=10
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadOnlyPaths=/etc/movie-model-tunnel
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Image Style"
+  short_description: "Choose an approved ComfyUI model and render an image"
+  default_prompt: "Use $image-style to list the available prompt-only style models and help me generate an image."

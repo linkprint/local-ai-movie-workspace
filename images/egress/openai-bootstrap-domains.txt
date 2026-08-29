@@ -1,0 +1,6 @@
+# Gate 3 bootstrap list. Expand only from observed Squid deny evidence.
+auth.openai.com
+chatgpt.com
+api.openai.com
+ab.chatgpt.com
+ios.chat.openai.com

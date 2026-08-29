@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Deadpan Mockumentary Interview"
+  short_description: "Write dry interview comedy with timed pauses"
+  default_prompt: "Use $h3-deadpan-mockumentary-interview to write an original MiniMax H3 mockumentary interview prompt and render it when requested."

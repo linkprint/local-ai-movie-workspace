@@ -1,0 +1,8 @@
+{
+  "prompt": "A clean cinematic storyboard still of a small white paper boat on a calm pond at dawn, soft golden light, subtle ripples, no text, no logo.",
+  "resolution": "1024x1024",
+  "steps": 4,
+  "guidance_scale": 2.5,
+  "flow_shift": 2.3,
+  "seed": 240824
+}

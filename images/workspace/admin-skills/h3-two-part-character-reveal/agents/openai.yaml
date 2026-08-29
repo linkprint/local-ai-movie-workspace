@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Two-Part Character Reveal"
+  short_description: "Bridge reveal clips with seam contracts"
+  default_prompt: "Use $h3-two-part-character-reveal to design an original MiniMax H3 cinematic character reveal with an explicit two-part seam contract, and render only when requested."

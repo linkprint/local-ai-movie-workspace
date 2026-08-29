@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Character Intro Motion Card"
+  short_description: "Build parameterized H3 hero-intro cards"
+  default_prompt: "Use $h3-character-intro-motion-card to write an original MiniMax H3 character-introduction motion-card prompt and render it when requested."

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "purpose": "Operator inventory template. Complete every source, destination, digest, revision, and license field before enabling a compute node.",
+  "comfyui": {
+    "install_directory": "/srv/comfyui",
+    "revision": "",
+    "python_lock_sha256": ""
+  },
+  "weights": [
+    {"filename": "MiniMax-H3-FL2VA-Acc-8Step.safetensors", "destination": "ComfyUI/models/diffusion_models", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "minimax_h3_fl2va_int8_convrot.safetensors", "destination": "ComfyUI/models/diffusion_models", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "PinkCherry_fl2va_MiniMax_H3_int8_convrot-beta-0.6.safetensors", "destination": "ComfyUI/models/diffusion_models", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "minimax_h3_ref2va_pruned_int8_convrot.safetensors", "destination": "ComfyUI/models/diffusion_models", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors", "destination": "ComfyUI/models/text_encoders", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "minimax_h3_video_vae_fp16.safetensors", "destination": "ComfyUI/models/vae", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "minimax_h3_audio_vae_fp32.safetensors", "destination": "ComfyUI/models/vae", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "z_image_turbo_nvfp4.safetensors", "destination": "ComfyUI/models/diffusion_models", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "qwen_3_4b_fp8_mixed.safetensors", "destination": "ComfyUI/models/text_encoders", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "ae.safetensors", "destination": "ComfyUI/models/vae", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "HunyuanImage-3.0-Instruct-Distil-NF4-v2", "destination": "ComfyUI/models/diffusion_models", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "svdq-fp4_r32-flux.1-krea-dev.safetensors", "destination": "ComfyUI/models/diffusion_models", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "svdq-fp4_r32-flux.1-dev.safetensors", "destination": "ComfyUI/models/diffusion_models", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "vixonsNoobIllust_v14.safetensors", "destination": "ComfyUI/models/checkpoints", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "autismmixSDXL_autismmixPony.safetensors", "destination": "ComfyUI/models/checkpoints", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "animagine-xl-4.0-opt.safetensors", "destination": "ComfyUI/models/checkpoints", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "bubbliCartoonIL_v10.safetensors", "destination": "ComfyUI/models/checkpoints", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "aMixIllustrious_aMix.safetensors", "destination": "ComfyUI/models/checkpoints", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "obsessionIllustrious_vPredV11.safetensors", "destination": "ComfyUI/models/checkpoints", "source_url": "", "sha256": "", "license": ""},
+    {"filename": "illustriousnxtXLBy_v10.safetensors", "destination": "ComfyUI/models/checkpoints", "source_url": "", "sha256": "", "license": ""}
+  ],
+  "custom_nodes": [
+    {
+      "destination": "ComfyUI/custom_nodes/operator-approved-minimax-h3-nodes",
+      "source_url": "",
+      "revision": "",
+      "license": "",
+      "required_class_types": [
+        "MiniMaxH3ImageToVideo",
+        "MiniMaxH3ReferenceToVideo",
+        "MiniMaxH3SigmaShift",
+        "MiniMaxH3PDDAccApply",
+        "ModelAttentionBackend",
+        "VAEDecodeAudio",
+        "CreateVideo",
+        "SaveVideo"
+      ]
+    },
+    {
+      "destination": "ComfyUI/custom_nodes/operator-approved-hunyuan-nodes",
+      "source_url": "",
+      "revision": "",
+      "license": "",
+      "required_class_types": [
+        "HunyuanInstructLoader",
+        "HunyuanInstructGenerate"
+      ]
+    }
+  ],
+  "operator_review": {
+    "generated_at": "",
+    "reviewer": "",
+    "all_sources_pinned": false,
+    "all_hashes_verified": false,
+    "all_licenses_reviewed": false
+  }
+}

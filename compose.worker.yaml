@@ -1,0 +1,116 @@
+name: movie_worker
+
+services:
+  movie-node-broker:
+    image: ${MOVIE_BROKER_IMAGE:-movie-worker-broker:local}
+    build:
+      context: .
+      dockerfile: images/control/Dockerfile
+      target: broker
+    environment:
+      MOVIE_COMPUTE_NODE_ID: ${MOVIE_COMPUTE_NODE_ID:?set MOVIE_COMPUTE_NODE_ID}
+      MOVIE_WORKER_REVISION: ${MOVIE_WORKER_REVISION:?set MOVIE_WORKER_REVISION}
+      MOVIE_WORKFLOW_REVISION: ${MOVIE_WORKFLOW_REVISION:?set MOVIE_WORKFLOW_REVISION}
+      MOVIE_MODEL_MANIFEST_SHA256: ${MOVIE_MODEL_MANIFEST_SHA256:-}
+      MOVIE_BROKER_SECRET_FILE: /run/secrets/node_broker_hmac_secret
+      MOVIE_BROKER_MANAGER_SECRET_FILE: /run/secrets/node_control_hmac_secret
+      MOVIE_MANAGER_URL: http://movie-node-control:8080
+      MOVIE_H3_ADAPTER_URL: http://movie-node-h3-adapter:8080
+      MOVIE_STYLE_DEMO_ROOT: /var/lib/movie-style-demos
+      MOVIE_QWEN_SOCKET: /run/movie-qwen/qwen.sock
+      MOVIE_DEEPSEEK_SOCKET: /run/movie-qwen/deepseek.sock
+    secrets:
+      - node_broker_hmac_secret
+      - node_control_hmac_secret
+    volumes:
+      - movie_node_broker_state:/var/lib/movie-broker
+      - movie_node_style_demos:/var/lib/movie-style-demos
+      - type: bind
+        source: /run/movie-qwen
+        target: /run/movie-qwen
+        read_only: true
+    group_add:
+      - "19003"
+    networks:
+      node_control: {}
+    ports:
+      - "${MOVIE_WORKER_BIND_IP:?set MOVIE_WORKER_BIND_IP}:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=10003,gid=65534,mode=0700
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  movie-node-control:
+    image: ${MOVIE_NODE_CONTROL_IMAGE:-movie-worker-node-control:local}
+    build:
+      context: .
+      dockerfile: images/control/Dockerfile
+      target: node-control
+    environment:
+      MOVIE_NODE_CONTROL_SECRET_FILE: /run/secrets/node_control_hmac_secret
+      MOVIE_H3_CONTROL_SECRET_FILE: /run/secrets/h3_control_hmac_secret
+      MOVIE_H3_CONTROL_SOCKET: /run/movie-h3-control/control.sock
+    secrets:
+      - node_control_hmac_secret
+      - h3_control_hmac_secret
+    volumes:
+      - type: bind
+        source: /run/movie-h3-control/control.sock
+        target: /run/movie-h3-control/control.sock
+        read_only: true
+    group_add:
+      - "19002"
+    networks:
+      node_control: {}
+    read_only: true
+    tmpfs:
+      - /tmp:size=8m,uid=10007,gid=65534,mode=0700
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  movie-node-h3-adapter:
+    image: ${MOVIE_H3_ADAPTER_IMAGE:-movie-worker-h3-adapter:local}
+    build:
+      context: .
+      dockerfile: images/control/Dockerfile
+      target: h3-adapter
+    environment:
+      MOVIE_COMFY_UPSTREAM: ${MOVIE_COMFY_UPSTREAM:?set MOVIE_COMFY_UPSTREAM}
+      MOVIE_STYLE_UPSTREAM: ${MOVIE_STYLE_UPSTREAM:-https://render.example.com}
+      MOVIE_STYLE_BASIC_AUTH_FILE: /run/secrets/movie_style_basic_credentials
+    secrets:
+      - movie_style_basic_credentials
+    networks:
+      node_control: {}
+      comfy_upstream: {}
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=10004,gid=65534,mode=0700
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+networks:
+  node_control:
+    internal: true
+  comfy_upstream: {}
+
+volumes:
+  movie_node_broker_state: {}
+  movie_node_style_demos: {}
+
+secrets:
+  node_broker_hmac_secret:
+    file: ./env/node_broker_hmac_secret
+  node_control_hmac_secret:
+    file: ./env/node_control_hmac_secret
+  h3_control_hmac_secret:
+    file: ./env/h3_control_hmac_secret
+  movie_style_basic_credentials:
+    file: ./env/movie_style_basic_credentials

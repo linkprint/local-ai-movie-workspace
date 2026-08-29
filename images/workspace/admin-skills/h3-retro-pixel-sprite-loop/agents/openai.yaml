@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Retro Pixel Sprite Loop"
+  short_description: "Animate seamless 16-bit character loops"
+  default_prompt: "Use $h3-retro-pixel-sprite-loop to design a seamless MiniMax H3 pixel-sprite animation prompt and render it when requested."

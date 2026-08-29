@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Surreal Miniature Absurdism"
+  short_description: "Direct uncanny macro-scale H3 comedy"
+  default_prompt: "Use $h3-surreal-miniature-absurdism to turn this premise into an original MiniMax H3 audiovisual prompt and render it when requested."

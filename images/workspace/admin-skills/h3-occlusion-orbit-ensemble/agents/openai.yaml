@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Occlusion Orbit Ensemble"
+  short_description: "Stage seamless close-orbit ensemble reveals"
+  default_prompt: "Use $h3-occlusion-orbit-ensemble to write an original MiniMax H3 occlusion-orbit ensemble prompt and render it when requested."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hunyuan Image Generation"
+  short_description: "Render Hunyuan images through the bounded Broker"
+  default_prompt: "Use $hunyuan-image-generation to render this approved image request and retrieve the artifact."

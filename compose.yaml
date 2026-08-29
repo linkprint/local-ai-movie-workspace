@@ -1,0 +1,644 @@
+name: movie_portal
+
+x-app: &app
+  image: ${MOVIE_APP_IMAGE:-movie-portal-app:local}
+  build:
+    context: .
+    dockerfile: images/portal/Dockerfile
+    target: runtime
+  env_file:
+    - ./env/laravel.env
+  environment:
+    MOVIE_BROKER_CONTROL_URL: http://movie-ai-router:8080
+    MOVIE_LOCAL_NODE_BROKER_URL: http://movie-ai-broker:8080
+  secrets:
+    - source: postgres_password_app
+      target: postgres_password
+    - source: redis_password_app
+      target: redis_password
+  read_only: true
+  tmpfs:
+    - /tmp:size=128m,mode=1777
+  volumes:
+    - movie_storage:/srv/app/storage
+    - movie_bootstrap_cache:/srv/app/bootstrap/cache
+  networks:
+    movie_back: {}
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  init: true
+  restart: unless-stopped
+
+services:
+  movie-gateway:
+    image: ${MOVIE_GATEWAY_IMAGE:-movie-portal-gateway:local}
+    build:
+      context: .
+      dockerfile: images/portal/Dockerfile
+      target: gateway
+    depends_on:
+      movie-web:
+        condition: service_healthy
+      movie-auth:
+        condition: service_healthy
+      movie-terminal-router:
+        condition: service_healthy
+    environment:
+      MOVIE_CADDY_IP: ${MOVIE_CADDY_IP:-192.168.88.30}
+    read_only: true
+    tmpfs:
+      - /config:size=8m,uid=1000,gid=1000,mode=0700
+      - /data:size=8m,uid=1000,gid=1000,mode=0700
+      - /tmp:size=16m,uid=1000,gid=1000,mode=1777
+    ports:
+      - "${MOVIE_PORTAL_BIND_IP:-192.168.88.20}:8443:8443"
+    networks:
+      movie_front: {}
+      movie_back:
+        ipv4_address: 172.30.10.2
+      movie_terminal:
+        ipv4_address: 172.30.20.2
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 0.50
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8443/up"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+  movie-web:
+    <<: *app
+    volumes:
+      - movie_storage:/srv/app/storage
+      - movie_style_demos:/srv/app/storage/app/style-demos:ro
+      - movie_bootstrap_cache:/srv/app/bootstrap/cache
+      - movie_outputs:/srv/movie-outputs
+    group_add:
+      - "10001"
+    secrets:
+      - source: postgres_password_app
+        target: postgres_password
+      - source: redis_password_app
+        target: redis_password
+      - source: manager_hmac_secret_app
+        target: manager_hmac_secret
+      - source: broker_hmac_secret_app
+        target: broker_hmac_secret
+    depends_on:
+      movie-postgres:
+        condition: service_healthy
+      movie-redis:
+        condition: service_healthy
+    networks:
+      movie_back:
+        ipv4_address: 172.30.10.3
+      movie_control: {}
+    expose:
+      - "9000"
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 2.0
+    healthcheck:
+      test: ["CMD", "movie-entrypoint", "php", "artisan", "migrate:status", "--no-ansi"]
+      interval: 15s
+      timeout: 8s
+      retries: 8
+      start_period: 30s
+
+  movie-queue:
+    <<: *app
+    command: ["php", "artisan", "horizon"]
+    depends_on:
+      movie-web:
+        condition: service_healthy
+    networks:
+      movie_back:
+        ipv4_address: 172.30.10.4
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 2.0
+    healthcheck:
+      test: ["CMD", "movie-entrypoint", "php", "artisan", "horizon:status"]
+      interval: 30s
+      timeout: 8s
+      retries: 5
+      start_period: 30s
+
+  movie-scheduler:
+    <<: *app
+    secrets:
+      - source: postgres_password_app
+        target: postgres_password
+      - source: redis_password_app
+        target: redis_password
+      - source: manager_hmac_secret_app
+        target: manager_hmac_secret
+      - source: broker_hmac_secret_app
+        target: broker_hmac_secret
+    command: ["php", "artisan", "schedule:work", "--no-interaction"]
+    depends_on:
+      movie-web:
+        condition: service_healthy
+    networks:
+      movie_back:
+        ipv4_address: 172.30.10.5
+      movie_control: {}
+    pids_limit: 96
+    mem_limit: 256m
+    cpus: 0.50
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(posix_kill(1, 0) ? 0 : 1);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  movie-auth:
+    <<: *app
+    secrets:
+      - source: postgres_password_app
+        target: postgres_password
+      - source: redis_password_app
+        target: redis_password
+      - source: manager_hmac_secret_app
+        target: manager_hmac_secret
+      - source: broker_hmac_secret_app
+        target: broker_hmac_secret
+      - source: router_hmac_secret_app
+        target: router_hmac_secret
+    command: ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080", "--no-reload"]
+    depends_on:
+      movie-postgres:
+        condition: service_healthy
+      movie-redis:
+        condition: service_healthy
+    networks:
+      movie_back:
+        ipv4_address: 172.30.10.6
+      movie_control: {}
+    expose:
+      - "8080"
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD", "php", "-r", "$$c=@file_get_contents('http://127.0.0.1:8080/up'); exit($$c===false?1:0);"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+
+  movie-workspace-manager:
+    image: ${MOVIE_MANAGER_IMAGE:-movie-portal-manager:local}
+    build:
+      context: .
+      dockerfile: images/control/Dockerfile
+      target: manager
+    environment:
+      MOVIE_MANAGER_SECRET_FILE: /run/secrets/manager_hmac_secret
+      MOVIE_BROKER_MANAGER_SECRET_FILE: /run/secrets/broker_manager_hmac_secret
+      MOVIE_H3_CONTROL_SECRET_FILE: /run/secrets/h3_control_hmac_secret
+      MOVIE_H3_CONTROL_SOCKET: /run/movie-h3-control/control.sock
+      MOVIE_WORKSPACE_IMAGE: ${MOVIE_WORKSPACE_IMAGE:-movie-portal-workspace:local}
+      MOVIE_WORKSPACE_SECURITY_REVISION: ${MOVIE_WORKSPACE_SECURITY_REVISION:-1}
+      MOVIE_WORKSPACE_APPARMOR: ${MOVIE_WORKSPACE_APPARMOR:-movie-workspace-bwrap}
+      MOVIE_WORKSPACE_SECCOMP: ${MOVIE_WORKSPACE_SECCOMP:-/usr/local/share/movie-workspace/seccomp.json}
+      MOVIE_OUTPUTS_VOLUME: movie_portal_outputs
+      MOVIE_VIDEO_BASE_URL: ${MOVIE_VIDEO_BASE_URL:-https://movie.example.com/workspace/projects}
+      MOVIE_COMPANY_CODEX_VOLUME: ${MOVIE_COMPANY_CODEX_VOLUME:-movie_company_codex_auth}
+      MOVIE_TERMINAL_ROUTER_CONTAINER: movie-terminal-router
+      MOVIE_EGRESS_CONTAINER: movie-egress
+      MOVIE_MAX_CONCURRENT_WORKSPACES: ${MOVIE_MAX_CONCURRENT_WORKSPACES:-3}
+      MOVIE_WORKSPACE_MEMORY_BYTES: ${MOVIE_WORKSPACE_MEMORY_BYTES:-4294967296}
+      MOVIE_WORKSPACE_NANO_CPUS: ${MOVIE_WORKSPACE_NANO_CPUS:-2000000000}
+      MOVIE_WORKSPACE_PIDS_LIMIT: ${MOVIE_WORKSPACE_PIDS_LIMIT:-512}
+    secrets:
+      - manager_hmac_secret
+      - source: broker_manager_hmac_secret_manager
+        target: broker_manager_hmac_secret
+      - source: h3_control_hmac_secret_manager
+        target: h3_control_hmac_secret
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - type: bind
+        source: /run/movie-h3-control/control.sock
+        target: /run/movie-h3-control/control.sock
+        read_only: true
+      - movie_manager_state:/var/lib/movie-manager
+    group_add:
+      - "${MOVIE_DOCKER_GID:?set MOVIE_DOCKER_GID to the host docker group GID}"
+      - "19002"
+    networks:
+      movie_control: {}
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=10002,gid=65534,mode=0700
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 96
+    mem_limit: 256m
+    cpus: 0.50
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  movie-terminal-router:
+    container_name: movie-terminal-router
+    image: ${MOVIE_TERMINAL_ROUTER_IMAGE:-movie-portal-terminal-router:local}
+    build:
+      context: .
+      dockerfile: images/control/Dockerfile
+      target: terminal-router
+    environment:
+      MOVIE_TERMINAL_ROUTER_LISTEN: 172.30.20.10
+      MOVIE_TERMINAL_ROUTER_PORT: 8080
+      MOVIE_TERMINAL_ROUTER_SECRET_FILE: /run/secrets/router_hmac_secret
+    secrets:
+      - source: router_hmac_secret_router
+        target: router_hmac_secret
+    networks:
+      movie_terminal:
+        ipv4_address: 172.30.20.10
+    expose:
+      - "8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=10005,gid=65534,mode=0700
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 128m
+    cpus: 0.50
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://172.30.20.10:8080/healthz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  movie-ai-broker:
+    image: ${MOVIE_BROKER_IMAGE:-movie-portal-broker:local}
+    build:
+      context: .
+      dockerfile: images/control/Dockerfile
+      target: broker
+    environment:
+      MOVIE_COMPUTE_NODE_ID: 20000000-0000-4000-8000-000000000020
+      MOVIE_WORKER_REVISION: ${MOVIE_WORKER_REVISION:-}
+      MOVIE_WORKFLOW_REVISION: ${MOVIE_WORKFLOW_REVISION:-}
+      MOVIE_MODEL_MANIFEST_SHA256: ${MOVIE_MODEL_MANIFEST_SHA256:-}
+      MOVIE_BROKER_SECRET_FILE: /run/secrets/broker_hmac_secret
+      MOVIE_BROKER_MANAGER_SECRET_FILE: /run/secrets/broker_manager_hmac_secret
+      MOVIE_MANAGER_URL: http://movie-workspace-manager:8080
+      MOVIE_H3_ADAPTER_URL: http://movie-h3-adapter:8080
+      MOVIE_STYLE_DEMO_ROOT: /var/lib/movie-style-demos
+      MOVIE_QWEN_SOCKET: /run/movie-qwen/qwen.sock
+      MOVIE_DEEPSEEK_SOCKET: /run/movie-qwen/deepseek.sock
+    secrets:
+      - source: node_broker_hmac_secret_20
+        target: broker_hmac_secret
+      - source: broker_manager_hmac_secret_broker
+        target: broker_manager_hmac_secret
+    volumes:
+      - movie_broker_state:/var/lib/movie-broker
+      - movie_style_demos:/var/lib/movie-style-demos
+      - type: bind
+        source: /run/movie-qwen
+        target: /run/movie-qwen
+        read_only: true
+    group_add:
+      - "19003"
+    networks:
+      movie_control: {}
+      movie_broker: {}
+      movie_h3_control: {}
+    expose:
+      - "8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=10003,gid=65534,mode=0700
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 96
+    mem_limit: 256m
+    cpus: 0.50
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  movie-ai-router:
+    image: ${MOVIE_AI_ROUTER_IMAGE:-movie-portal-ai-router:local}
+    build:
+      context: .
+      dockerfile: images/control/Dockerfile
+      target: ai-router
+    environment:
+      MOVIE_AI_ROUTER_SECRET_FILE: /run/secrets/broker_hmac_secret
+      MOVIE_AI_ROUTER_STATE: /var/lib/movie-ai-router/state.json
+      MOVIE_NODE_SECRET_DIR: /run/secrets
+      MOVIE_ALLOWED_NODE_CIDRS: ${MOVIE_ALLOWED_NODE_CIDRS:-192.168.88.0/24}
+      MOVIE_NODE_WORKER_PORT: ${MOVIE_NODE_WORKER_PORT:-8080}
+      MOVIE_NODE_HEALTH_TIMEOUT_SECONDS: ${MOVIE_NODE_HEALTH_TIMEOUT_SECONDS:-5}
+      MOVIE_LOCAL_NODE_HOST: movie-ai-broker
+    secrets:
+      - broker_hmac_secret
+      - source: node_broker_hmac_secret_20
+        target: node_20000000-0000-4000-8000-000000000020
+      - source: node_broker_hmac_secret_200
+        target: node_20000000-0000-4000-8000-000000000200
+    volumes:
+      - movie_ai_router_state:/var/lib/movie-ai-router
+    networks:
+      movie_control: {}
+      movie_broker: {}
+      movie_worker_upstream: {}
+    expose:
+      - "8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=10006,gid=65534,mode=0700
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 96
+    mem_limit: 256m
+    cpus: 0.50
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  movie-h3-adapter:
+    image: ${MOVIE_H3_ADAPTER_IMAGE:-movie-portal-h3-adapter:local}
+    build:
+      context: .
+      dockerfile: images/control/Dockerfile
+      target: h3-adapter
+    environment:
+      MOVIE_COMFY_UPSTREAM: ${MOVIE_COMFY_UPSTREAM:-http://192.168.88.20:8188}
+      MOVIE_STYLE_UPSTREAM: ${MOVIE_STYLE_UPSTREAM:-https://render.example.com}
+      MOVIE_STYLE_BASIC_AUTH_FILE: /run/secrets/movie_style_basic_credentials
+    secrets:
+      - source: movie_style_basic_credentials
+        target: movie_style_basic_credentials
+    networks:
+      movie_h3_control: {}
+      movie_h3_upstream: {}
+    expose:
+      - "8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,uid=10004,gid=65534,mode=0700
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    mem_limit: 128m
+    cpus: 0.25
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  movie-egress:
+    container_name: movie-egress
+    image: ${MOVIE_EGRESS_IMAGE:-movie-portal-egress:local}
+    build:
+      context: .
+      dockerfile: images/egress/Dockerfile
+    networks:
+      movie_egress_client: {}
+      movie_egress_upstream: {}
+    expose:
+      - "3128"
+    user: "13:13"
+    read_only: true
+    tmpfs:
+      - /run:size=8m,uid=13,gid=13,mode=0750
+      - /tmp:size=16m,uid=13,gid=13,mode=1777
+      - /var/log/squid:size=16m,uid=13,gid=13,mode=0750
+      - /var/spool/squid:size=16m,uid=13,gid=13,mode=0750
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 0.50
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  movie-workspace-image:
+    image: ${MOVIE_WORKSPACE_IMAGE:-movie-portal-workspace:local}
+    build:
+      context: .
+      dockerfile: images/workspace/Dockerfile
+    profiles: ["workspace-build"]
+
+  movie-postgres:
+    image: postgres:18-bookworm
+    environment:
+      POSTGRES_DB: movie_portal
+      POSTGRES_USER: movie_portal
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=scram-sha-256
+      PGDATA: /var/lib/postgresql/18/docker
+    secrets:
+      - source: postgres_password_db
+        target: postgres_password
+    volumes:
+      - movie_postgres_data:/var/lib/postgresql/18/docker
+    tmpfs:
+      - /run/postgresql:size=16m,uid=999,gid=999,mode=0770
+      - /tmp:size=64m,uid=999,gid=999,mode=1777
+    networks:
+      movie_back:
+        ipv4_address: 172.30.10.10
+    expose:
+      - "5432"
+    user: "999:999"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 2g
+    cpus: 2.0
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U movie_portal -d movie_portal"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  movie-redis:
+    image: redis:8-alpine
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        umask 077
+        printf 'bind 0.0.0.0\nprotected-mode yes\nappendonly yes\nappendfsync everysec\nrequirepass %s\n' "$$(tr -d '\r\n' < /run/secrets/redis_password)" > /run/movie-redis/redis.conf
+        exec redis-server /run/movie-redis/redis.conf
+    secrets:
+      - source: redis_password_server
+        target: redis_password
+    volumes:
+      - movie_redis_data:/data
+    tmpfs:
+      - /run/movie-redis:size=8m,uid=999,gid=999,mode=0700
+      - /tmp:size=16m,uid=999,gid=999,mode=1777
+    networks:
+      movie_back:
+        ipv4_address: 172.30.10.11
+    expose:
+      - "6379"
+    user: "999:999"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$(tr -d '\r\n' < /run/secrets/redis_password) redis-cli ping | grep -qx PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+networks:
+  movie_front:
+    name: movie_front
+  movie_back:
+    name: movie_back
+    ipam:
+      config:
+        - subnet: 172.30.10.0/24
+  movie_terminal:
+    name: movie_terminal
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.20.0/24
+  movie_control:
+    name: movie_control
+    internal: true
+  movie_broker:
+    name: movie_broker
+    internal: true
+  movie_h3_control:
+    name: movie_h3_control
+    internal: true
+  movie_egress_client:
+    name: movie_egress_client
+    internal: true
+  movie_egress_upstream:
+    name: movie_egress_upstream
+  movie_h3_upstream:
+    name: movie_h3_upstream
+  movie_worker_upstream:
+    name: movie_worker_upstream
+    internal: false
+
+volumes:
+  movie_storage:
+    name: movie_portal_storage
+  movie_bootstrap_cache:
+    name: movie_portal_bootstrap_cache
+  movie_manager_state:
+    name: movie_portal_manager_state
+  movie_broker_state:
+    name: movie_portal_broker_state
+  movie_ai_router_state:
+    name: movie_portal_ai_router_state
+  movie_outputs:
+    name: movie_portal_outputs
+  movie_style_demos:
+    name: movie_portal_style_demos
+  movie_postgres_data:
+    name: movie_portal_postgres_data
+  movie_redis_data:
+    name: movie_portal_redis_data
+
+secrets:
+  postgres_password_app:
+    file: ./env/postgres_password.app
+  postgres_password_db:
+    file: ./env/postgres_password.db
+  redis_password_app:
+    file: ./env/redis_password.app
+  redis_password_server:
+    file: ./env/redis_password.server
+  manager_hmac_secret:
+    file: ./env/manager_hmac_secret
+  manager_hmac_secret_app:
+    file: ./env/manager_hmac_secret.app
+  broker_hmac_secret:
+    file: ./env/broker_hmac_secret
+  broker_hmac_secret_app:
+    file: ./env/broker_hmac_secret.app
+  node_broker_hmac_secret_20:
+    file: ./env/node_broker_hmac_secret.20
+  node_broker_hmac_secret_200:
+    file: ./env/node_broker_hmac_secret.200
+  broker_manager_hmac_secret_manager:
+    file: ./env/broker_manager_hmac_secret.manager
+  broker_manager_hmac_secret_broker:
+    file: ./env/broker_manager_hmac_secret.broker
+  h3_control_hmac_secret_manager:
+    file: ./env/h3_control_hmac_secret.manager
+  router_hmac_secret_router:
+    file: ./env/router_hmac_secret.router
+  router_hmac_secret_app:
+    file: ./env/router_hmac_secret.app
+  movie_style_basic_credentials:
+    file: ./env/movie_style_basic_credentials

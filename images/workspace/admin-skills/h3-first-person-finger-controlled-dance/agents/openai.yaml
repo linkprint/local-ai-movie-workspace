@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Finger-Controlled POV Dance"
+  short_description: "Map foreground gestures to dance motion"
+  default_prompt: "Use $h3-first-person-finger-controlled-dance to write an original non-sexualized MiniMax H3 first-person finger-controlled dance prompt, and render only when requested."

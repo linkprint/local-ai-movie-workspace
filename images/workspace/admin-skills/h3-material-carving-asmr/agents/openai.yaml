@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Material Carving ASMR"
+  short_description: "Direct tactile carving-reveal H3 shorts"
+  default_prompt: "Use $h3-material-carving-asmr to write an original MiniMax H3 material-carving ASMR prompt and render it when requested."

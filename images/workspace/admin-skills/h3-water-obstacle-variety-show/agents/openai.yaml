@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Water Obstacle Variety Show"
+  short_description: "Anchor improvised obstacle-show comedy"
+  default_prompt: "Use $h3-water-obstacle-variety-show to write an original safe MiniMax H3 water-obstacle variety-show prompt, and render only when requested."

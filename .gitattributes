@@ -1,0 +1,11 @@
+# Preserve imported generated/vendor assets and historical Markdown hard breaks.
+/app/public/js/filament/** -whitespace
+/docs/*.md -whitespace
+/images/portal/entrypoint.sh -whitespace
+/images/portal/php-fpm.conf -whitespace
+/images/portal/php.ini -whitespace
+/ops/firewall/movie-portal-firewall.service -whitespace
+/ops/ssh/movie-model-tunnel.conf -whitespace
+/ops/systemd/movie-model-tunnel@.service -whitespace
+/ops/tests/gate2-static.sh -whitespace
+/ops/tmpfiles/movie-qwen.conf -whitespace

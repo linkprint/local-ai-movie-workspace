@@ -1,0 +1,43 @@
+{
+    admin off
+    auto_https off
+    servers {
+        trusted_proxies static {$MOVIE_CADDY_IP:192.168.88.30}
+        trusted_proxies_strict
+        client_ip_headers X-Forwarded-For
+    }
+}
+
+:8443 {
+    log {
+        output stdout
+        format json
+    }
+
+    @workspace_source remote_ip 172.30.20.0/24
+    respond @workspace_source 403
+
+    @internal path /internal/*
+    respond @internal 404
+
+    @terminal path /terminal /terminal/*
+    route @terminal {
+        request_header -X-Movie-Route
+        forward_auth movie-auth:8080 {
+            uri /internal/terminal-authorize
+            copy_headers X-Movie-Route
+        }
+        reverse_proxy movie-terminal-router:8080
+    }
+
+    root * /srv/app/public
+    encode zstd gzip
+
+    php_fastcgi movie-web:9000 {
+        capture_stderr
+        env HTTP_X_FORWARDED_PROTO {header.X-Forwarded-Proto}
+        env HTTP_X_FORWARDED_HOST {header.X-Forwarded-Host}
+    }
+
+    file_server
+}

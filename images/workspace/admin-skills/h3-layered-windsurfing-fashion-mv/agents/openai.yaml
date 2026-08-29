@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Layered Windsurfing Fashion MV"
+  short_description: "Direct layered fashion-sports story arcs"
+  default_prompt: "Use $h3-layered-windsurfing-fashion-mv to design an original layered-reference MiniMax H3 fashion-sports segment or multi-part arc, and render only when requested."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Multiverse Portal Ensemble"
+  short_description: "Stage original heroes through glowing portals"
+  default_prompt: "Use $h3-multiverse-portal-ensemble to stage these original characters in a MiniMax H3 portal-arrival prompt and render it when requested."

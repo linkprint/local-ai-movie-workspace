@@ -1,0 +1,12 @@
+[Unit]
+Description=Movie AI local Qwen Responses socket
+
+[Socket]
+ListenStream=/run/movie-qwen/qwen.sock
+SocketUser=root
+SocketGroup=movie-qwen
+SocketMode=0660
+RemoveOnStop=true
+
+[Install]
+WantedBy=sockets.target

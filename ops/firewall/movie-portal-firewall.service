@@ -1,0 +1,14 @@
+[Unit]
+Description=Restrict movie portal Docker published port to the public Caddy host
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/srv/movie-portal/ops/firewall/install-rule.sh
+ExecStop=/srv/movie-portal/ops/firewall/remove-rule.sh
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Editorial Fashion Motion"
+  short_description: "Create beat-synced couture editorial H3 videos"
+  default_prompt: "Use $h3-editorial-fashion-motion to turn this fashion concept or reference image into a polished MiniMax H3 editorial-motion prompt and render it when requested."

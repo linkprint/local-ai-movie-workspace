@@ -1,0 +1,21 @@
+[Unit]
+Description=Recover NVIDIA driver after a cold boot
+Wants=systemd-udev-settle.service
+After=systemd-udev-settle.service
+Before=movie-qwen.service movie-comfyui.service
+ConditionPathExists=/usr/bin/nvidia-smi
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=oneshot
+Environment=NVIDIA_GPU_INDEX=0
+Environment=NVIDIA_POWER_LIMIT_W=550
+ExecStart=/srv/movie-portal/ops/systemd/nvidia-gpu-recovery.sh
+RemainAfterExit=yes
+Restart=on-failure
+RestartSec=15
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

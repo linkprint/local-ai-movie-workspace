@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Soft-Body Physics Comedy"
+  short_description: "Direct tactile squish and constraint comedy"
+  default_prompt: "Use $h3-soft-body-physics-comedy to turn this physical gag into a MiniMax H3 prompt and render it when requested."

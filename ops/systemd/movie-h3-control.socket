@@ -1,0 +1,14 @@
+[Unit]
+Description=Movie AI H3 fixed control socket
+
+[Socket]
+ListenStream=/run/movie-h3-control/control.sock
+SocketUser=root
+SocketGroup=movie-h3-control
+SocketMode=0660
+DirectoryMode=0711
+RemoveOnStop=yes
+Service=movie-h3-control.service
+
+[Install]
+WantedBy=sockets.target

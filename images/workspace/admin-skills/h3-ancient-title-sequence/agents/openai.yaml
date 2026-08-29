@@ -1,0 +1,4 @@
+interface:
+  display_name: "H3 Ancient Title Sequence"
+  short_description: "Create tactile historical H3 title openings"
+  default_prompt: "Use $h3-ancient-title-sequence to write an original MiniMax H3 historical title-sequence prompt and render it when requested."
